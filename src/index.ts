@@ -74,7 +74,7 @@ async function takeEpisodeScreenshots(
 
     const fullTitle = await page.title();
 
-    const title = fullTitle.split("｜")[0];
+    const title = fullTitle.split("｜")[0].replace(/["!?/*:<>\[\]]/g, " ");
 
     console.log(title);
 
