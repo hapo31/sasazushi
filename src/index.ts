@@ -1,21 +1,29 @@
 import puppeteer from "puppeteer";
+import fs from "fs";
 import mkdirp from "mkdirp";
 import path from "path";
 
-const shoutaNoSushiIndexUrl = "https://www.sukima.me/book/title/rigths0000003/";
-
-const saveRootDir = path.join("./dist");
-
 (async () => {
+    const indexUrl = process.argv[2] || "";
+    const distPath = process.argv[3] || "./dist";
+    if (indexUrl.length === 0) {
+        console.log("Usage: yarn start {url} [path]");
+        process.exit(0);
+    }
+
+    await scraping(indexUrl, distPath);
+})();
+
+async function scraping(targetUrl: string, distPath: string) {
     console.log("starting...");
     const browser = await puppeteer.launch({
         headless: true,
         args: ["--lang=ja,en-US,en"]
     });
     const page = await browser.newPage();
-    await page.goto(shoutaNoSushiIndexUrl, { waitUntil: "domcontentloaded" });
+    await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
 
-    console.log("went to " + shoutaNoSushiIndexUrl);
+    console.log("went to " + targetUrl);
     await page.waitForSelector(".booktitle-volume-list");
 
     const episodeAnchorList = await page.$$(".volume-details > a");
@@ -33,17 +41,18 @@ const saveRootDir = path.join("./dist");
         let index = 0;
         // 本番
         for (const url of links) {
-            await takeEpisodeScreenshots(browser, url, index);
-            ++index;
+            await takeEpisodeScreenshots(browser, url, distPath, index);
+            index += 1;
         }
     }
 
-    await browser.close();
-})();
+    return await browser.close();
+}
 
 async function takeEpisodeScreenshots(
     browser: puppeteer.Browser,
     url: string,
+    distPath: string,
     directoryPrefixIndex: number,
     size?: { witdh: number; height: number }
 ) {
@@ -78,10 +87,7 @@ async function takeEpisodeScreenshots(
 
     console.log(title);
 
-    const comicPath = path.join(
-        saveRootDir,
-        `${directoryPrefixIndex}_${title}`
-    );
+    const comicPath = path.join(distPath, `${directoryPrefixIndex}_${title}`);
 
     mkdirp.sync(comicPath);
 
