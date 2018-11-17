@@ -8,10 +8,12 @@
         "build": "tsc"
     },
     "dependencies": {
+        "mkdirp": "^0.5.1",
         "puppeteer": "^1.10.0",
         "ts-node": "^7.0.1"
     },
     "devDependencies": {
+        "@types/mkdirp": "^0.5.2",
         "@types/puppeteer": "^1.10.0",
         "typescript": "^3.1.6"
     }
