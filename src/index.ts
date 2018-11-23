@@ -1,32 +1,39 @@
 import puppeteer from "puppeteer";
-import fs from "fs";
 import mkdirp from "mkdirp";
 import path from "path";
+
+const headless = true;
 
 (async () => {
     const indexUrl = process.argv[2] || "";
     const distPath = process.argv[3] || "./dist";
+    const startIndex = parseInt(process.argv[4]) || 0;
+
     if (indexUrl.length === 0) {
         console.log("Usage: yarn start {url} [path]");
         process.exit(0);
     }
 
-    await scraping(indexUrl, distPath);
+    await scraping(indexUrl, distPath, startIndex);
 })();
 
-async function scraping(targetUrl: string, distPath: string) {
+async function scraping(
+    targetUrl: string,
+    distPath: string,
+    startIndex: number
+) {
     console.log("starting...");
     const browser = await puppeteer.launch({
-        headless: true,
+        headless,
         args: ["--lang=ja,en-US,en"]
     });
     const page = await browser.newPage();
     await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
 
     console.log("went to " + targetUrl);
-    await page.waitForSelector(".booktitle-volume-list");
+    await page.waitForSelector(".chapters");
 
-    const episodeAnchorList = await page.$$(".volume-details > a");
+    const episodeAnchorList = await page.$$(".chapters > a");
 
     if (episodeAnchorList != null) {
         const links: string[] = await Promise.all(
@@ -36,11 +43,11 @@ async function scraping(targetUrl: string, distPath: string) {
         );
 
         // テスト用に1ページだけ
-        // await takeEpisodeScreenshots(browser, links[0]);
+        // await takeEpisodeScreenshots(browser, links[0], distPath, startIndex);
 
-        let index = 0;
+        let index = startIndex;
         // 本番
-        for (const url of links) {
+        for (const url of links.splice(index)) {
             await takeEpisodeScreenshots(browser, url, distPath, index);
             index += 1;
         }
@@ -53,17 +60,17 @@ async function takeEpisodeScreenshots(
     browser: puppeteer.Browser,
     url: string,
     distPath: string,
-    directoryPrefixIndex: number,
-    size?: { witdh: number; height: number }
+    directoryPrefixIndex: number
 ) {
     const page = await browser.newPage();
-    if (size) {
-        await page.setViewport({ width: size.witdh, height: size.height });
-    } else {
-        await page.setViewport({ width: 768, height: 1210 });
-    }
+
+    await page.setViewport({ width: 768, height: 1210 });
 
     await page.goto(url, { waitUntil: "domcontentloaded" });
+
+    await page.waitForSelector(".popupad-close", {
+        visible: true
+    });
 
     // 広告を閉じる
     const ad = await page.$(".popupad-close");
@@ -83,7 +90,10 @@ async function takeEpisodeScreenshots(
 
     const fullTitle = await page.title();
 
-    const title = fullTitle.split("｜")[0].replace(/["!?/*:<>\[\]]/g, " ");
+    const title = fullTitle
+        .split("｜")[0]
+        .replace(/["!?/*:<>\[\]]/g, " ")
+        .trim(); // Winでディレクトリ名の末尾にスペースがあるとファイルの削除/移動が不可能になるバグ対策
 
     console.log(title);
 
@@ -101,7 +111,7 @@ async function takeEpisodeScreenshots(
         if (canvasIncludeDiv) {
             const filePath =
                 path.join(comicPath, pageIndex.toString()) + ".png";
-            console.log(`   page:${filePath}`);
+            console.log(`    ${filePath}`);
             await canvasIncludeDiv.screenshot({
                 path: filePath,
                 type: "png"
@@ -110,12 +120,8 @@ async function takeEpisodeScreenshots(
             // element が取れなかったら終了する
             break;
         }
-
-        const nextBtn = await page.$("#btn-next");
-        if (nextBtn) {
-            await nextBtn.click();
-        }
-        // ページが切り替わるまで待つ
+        await page.keyboard.press("ArrowLeft");
+        // 要素が表示されるまで待つ
         await page.waitFor(200);
         pageIndex += 1;
     }
