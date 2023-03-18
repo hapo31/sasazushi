@@ -6,7 +6,7 @@
     "scripts": {
         "start": "ts-node",
         "start:shouta": "ts-node ./src/index.ts",
-        "start:comicDays": "node --loader ts-node/esm ./src/comic-days.mts",
+        "start:comicDays": "node --loader ts-node/esm ./src/comic-ddd.mts",
         "build": "tsc"
     },
     "dependencies": {
