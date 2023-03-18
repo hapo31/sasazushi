@@ -25,7 +25,7 @@ async function scraping(
     console.log("starting...");
     const browser = await puppeteer.launch({
         headless,
-        args: ["--lang=ja,en-US,en"]
+        args: ["--lang=ja,en-US,en"],
     });
     const page = await browser.newPage();
     await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
@@ -38,7 +38,7 @@ async function scraping(
     if (episodeAnchorList != null) {
         const links: string[] = await Promise.all(
             episodeAnchorList.map(
-                async a => await (await a.getProperty("href")).jsonValue()
+                async (a) => await (await a.getProperty("href")).jsonValue()
             )
         );
 
@@ -69,7 +69,7 @@ async function takeEpisodeScreenshots(
     await page.goto(url, { waitUntil: "domcontentloaded" });
 
     await page.waitForSelector(".popupad-close", {
-        visible: true
+        visible: true,
     });
 
     // 広告を閉じる
@@ -114,7 +114,7 @@ async function takeEpisodeScreenshots(
             console.log(`    ${filePath}`);
             await canvasIncludeDiv.screenshot({
                 path: filePath,
-                type: "png"
+                type: "png",
             });
         } else {
             // element が取れなかったら終了する
