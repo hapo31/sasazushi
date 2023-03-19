@@ -21,7 +21,7 @@ const browser = await puppeteer.launch({
 const page = await browser.newPage();
 await page.goto(target, { waitUntil: "domcontentloaded" });
 await page.waitForSelector("html");
-const meta = await page.evaluate(() => {
+const meta = await page.evaluate(async () => {
     const el = document.getElementsByTagName("html")?.[0];
     const str = el.getAttribute("data-gtm-data-layer");
     if (str == null) {
@@ -31,27 +31,11 @@ const meta = await page.evaluate(() => {
     const comicData = JSON.parse(str).episode as ComicData;
     const { series_id: id } = comicData;
 
-    const xhr = new XMLHttpRequest();
-    return new Promise<{ comicData: ComicData; xml: string }>((res, rej) => {
-        xhr.onreadystatechange = () => {
-            switch (xhr.readyState) {
-                case xhr.DONE: {
-                    if (xhr.status !== 200) {
-                        rej(xhr.responseText);
-                        return;
-                    }
-                    if (xhr.responseText == null) {
-                        rej("document was null.");
-                        return;
-                    }
-                    res({ xml: xhr.responseText, comicData });
-                }
-            }
-        };
+    const res = await fetch(
+        `https://comic-days.com/atom/series/${id}?free_only=1`
+    );
 
-        xhr.open("GET", `https://comic-days.com/atom/series/${id}?free_only=1`);
-        xhr.send();
-    });
+    return { xml: await res.text(), comicData };
 });
 if (meta == null) {
     console.error(`Not found comic data, visit: ${target}`);
