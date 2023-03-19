@@ -104,6 +104,13 @@ async function takeEpisodeScreenshots(
         });
     } catch {}
 
+    await page.addStyleTag({
+        content: `
+            * {
+                transition: all 0s !important;
+            }    
+`,
+    });
     const imageElements = await page.$$("p.js-page-area");
 
     const timer = setInterval(async () => {
@@ -116,7 +123,7 @@ async function takeEpisodeScreenshots(
     await page.keyboard.press("ArrowLeft", {
         delay: 1,
     });
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(1000);
     for (let i = 0; i < imageElements.length; ++i) {
         const elem = await imageElements[i].$("canvas");
 
